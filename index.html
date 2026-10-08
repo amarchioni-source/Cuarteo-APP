@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cuarteo final · Azul Natural Beef</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --hielo: #e9eef2;
+  --papel: #ffffff;
+  --tinta: #14202b;
+  --tenue: #5b6b79;
+  --acero: #24506f;
+  --acero-osc: #1b3d56;
+  --linea: #c9d3db;
+  --ok: #2c7a4b;
+  --aviso: #8a5200;
+  --aviso-bg: #fff4e0;
+  --error: #a3231b;
+  --error-bg: #fdecea;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--hielo);
+  color: var(--tinta);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 40px 20px 72px;
+}
+
+header { margin-bottom: 28px; }
+.marca { margin: 0 0 4px; color: var(--acero); font-weight: 600; font-size: 15px; }
+h1 { margin: 0 0 8px; font-size: 34px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
+.bajada { margin: 0; max-width: 60ch; color: var(--tenue); }
+h2 { margin: 0 0 12px; font-size: 22px; font-weight: 600; }
+h3 { margin: 36px 0 4px; font-size: 17px; font-weight: 600; }
+
+/* ---- zona de carga: el elemento principal de la página ---- */
+.zona {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 150px;
+  padding: 28px 24px;
+  background: var(--papel);
+  border: 2px dashed var(--acero);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.zona input[type=file] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+}
+.zona:focus-within { outline: 3px solid var(--acero); outline-offset: 3px; }
+.zona.arrastrando { background: #dbe8f1; border-style: solid; }
+.zona.con-archivo { border-style: solid; border-color: var(--ok); }
+.zona-titulo { font-size: 20px; font-weight: 500; overflow-wrap: anywhere; }
+.zona-ayuda { color: var(--tenue); font-size: 14px; }
+
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+  margin: 22px 0;
+}
+.campo label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 14px; }
+.campo input {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--tinta);
+  background: var(--papel);
+  border: 1px solid var(--linea);
+  border-radius: 4px;
+}
+.campo input:focus-visible { outline: 3px solid var(--acero); outline-offset: 1px; border-color: var(--acero); }
+.campo small { display: block; margin-top: 4px; color: var(--tenue); font-size: 13px; }
+
+button, .descarga {
+  display: inline-block;
+  padding: 12px 22px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  background: var(--acero);
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+}
+button:hover, .descarga:hover { background: var(--acero-osc); }
+button:focus-visible, .descarga:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; }
+button:disabled { background: var(--tenue); cursor: progress; }
+
+/* ---- mensajes ---- */
+.mensaje { margin: 24px 0 0; padding: 14px 16px; border-left: 4px solid; border-radius: 0 4px 4px 0; }
+.mensaje.error { color: var(--error); background: var(--error-bg); border-color: var(--error); font-weight: 500; }
+.mensaje.aviso { color: var(--aviso); background: var(--aviso-bg); border-color: var(--aviso); }
+.mensaje ul { margin: 6px 0 0; padding-left: 20px; }
+.mensaje li + li { margin-top: 4px; }
+
+/* ---- resultado ---- */
+.resultado { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--linea); }
+.listo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+}
+.datos { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 0; }
+.datos div { min-width: 70px; }
+.datos dt { color: var(--tenue); font-size: 13px; }
+.datos dd { margin: 0; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.descarga { background: var(--ok); }
+.descarga:hover { background: #20603b; }
+
+.nota { margin: 4px 0 12px; color: var(--tenue); font-size: 14px; max-width: 75ch; }
+
+.tabla { overflow-x: auto; background: var(--papel); border: 1px solid var(--linea); border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 15px; }
+th, td { padding: 9px 14px; text-align: left; white-space: nowrap; }
+thead th { font-weight: 600; font-size: 14px; background: #f3f6f8; border-bottom: 1px solid var(--linea); }
+tbody tr + tr td { border-top: 1px solid #e6ecf0; }
+tfoot td { font-weight: 600; border-top: 2px solid var(--linea); }
+tfoot tr.tenue td { font-weight: 400; color: var(--tenue); border-top: 0; }
+.n { text-align: right; }
+td.alerta { color: var(--aviso); font-weight: 600; }
+
+@media (max-width: 560px) {
+  main { padding: 28px 16px 56px; }
+  h1 { font-size: 28px; }
+  .zona { min-height: 130px; padding: 22px 18px; }
+  .descarga, button { width: 100%; text-align: center; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .zona { transition: background-color .15s, border-color .15s; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="marca">Azul Natural Beef</p>
+    <h1>Cuarteo final</h1>
+    <p class="bajada">Subí la bajada del sistema y descargá el Anexo Cuarteo y Troceo listo para revisar y enviar.</p>
+  </header>
+
+  <form id="form" method="post" action="{{ url_for('generar') }}" enctype="multipart/form-data">
+    <label class="zona" id="zona" for="bajada">
+      <input type="file" id="bajada" name="bajada" accept=".xlsx" required>
+      <span class="zona-titulo" id="zona-titulo">Soltá la bajada acá o elegí el archivo</span>
+      <span class="zona-ayuda" id="zona-ayuda">Excel .xlsx del sistema, por ejemplo cuarto_0610_de_sistema.xlsx</span>
+    </label>
+
+    <div class="opciones">
+      <div class="campo">
+        <label for="fecha_faena">Fecha de faena</label>
+        <input type="date" id="fecha_faena" name="fecha_faena" value="{{ form.get('fecha_faena', '') }}">
+        <small>Vacía: se toma el día hábil anterior al programa.</small>
+      </div>
+      <div class="campo">
+        <label for="serie">Número de serie</label>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="serie" name="serie" maxlength="8"
+               value="{{ form.get('serie', '') }}" placeholder="Ej.: 2291">
+        <small>Vacío: queda el de la plantilla.</small>
+      </div>
+    </div>
+
+    <button type="submit" id="boton">Generar final</button>
+  </form>
+
+  {% if error %}
+  <p class="mensaje error" role="alert">{{ error }}</p>
+  {% endif %}
+
+  {% if res %}
+  <section class="resultado" aria-labelledby="t-res">
+    <div class="listo">
+      <div>
+        <h2 id="t-res">Final generado</h2>
+        <dl class="datos">
+          <div><dt>Programa del</dt><dd>{{ res.fecha|fecha }}</dd></div>
+          <div><dt>Faena del</dt><dd>{{ res.fecha_faena|fecha }}</dd></div>
+          <div><dt>Serie</dt><dd>{{ res.serie or '—' }}</dd></div>
+          <div><dt>Tropas</dt><dd>{{ res.n_tropas }}</dd></div>
+          <div><dt>Medias</dt><dd>{{ res.medias|num }}</dd></div>
+        </dl>
+      </div>
+      <a class="descarga" href="{{ url_for('descargar', token=token) }}">Descargar {{ nombre }}</a>
+    </div>
+
+    {% if res.avisos %}
+    <div class="mensaje aviso" role="status">
+      <strong>Para revisar</strong>
+      <ul>{% for a in res.avisos %}<li>{{ a }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <p class="nota">La fecha de faena se calcula como el día hábil anterior; no contempla feriados.
+      El archivo se recalcula al abrirlo en Excel.</p>
+
+    <h3>Peso promedio por media</h3>
+    <p class="nota">Kg de la categoría en la bajada dividido por las {{ res.medias|num }} medias del día.</p>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Categoría</th><th class="n">Kg en la bajada</th><th class="n">Kg por media</th></tr></thead>
+        <tbody>
+          {% for c in res.categorias %}
+          <tr><td>{{ c.nombre }}</td><td class="n">{{ c.kg|num(1) }}</td><td class="n">{{ c.kg_media|num(3) }}</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td>Total informado en el final</td><td class="n">{{ res.kg_final|num(1) }}</td>
+              <td class="n">{{ (res.kg_final / res.medias)|num(3) }}</td></tr>
+          <tr class="tenue"><td>No va al final (decomiso, recorte, varios, falsa entraña)</td>
+              <td class="n">{{ res.no_va_kg|num(1) }}</td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <h3>Control por tropa</h3>
+    <p class="nota">Kg del final = medias de la tropa × suma de los pesos por media. Se compara con el total de kg de la bajada para esa tropa.</p>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Tropa</th><th class="n">Medias</th><th class="n">Kg ingreso</th>
+          <th class="n">Kg final</th><th class="n">Kg bajada</th><th class="n">Diferencia</th></tr></thead>
+        <tbody>
+          {% for t in res.tropas %}
+          <tr>
+            <td>{{ t.tropa }}</td><td class="n">{{ t.medias|num }}</td><td class="n">{{ t.kg_ingreso|num }}</td>
+            <td class="n">{{ t.kg_final|num(1) }}</td><td class="n">{{ t.kg_sistema|num(1) }}</td>
+            <td class="n {{ 'alerta' if t.dif_pct is not none and t.dif_pct|abs > 5 }}">
+              {% if t.dif_pct is not none %}{{ t.dif_pct|num(1) }} %{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td>Total</td><td class="n">{{ res.medias|num }}</td><td class="n">{{ res.kg_ingreso|num }}</td>
+              <td class="n">{{ res.kg_final|num(1) }}</td>
+              <td class="n">{{ res.kg_sistema|num(1) }}</td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <p class="nota">Para reasignar un producto a otra categoría, editar la columna «Categoría final» de la hoja «Peso promedio» del archivo descargado.</p>
+  </section>
+  {% endif %}
+</main>
+
+<script>
+  const input = document.getElementById('bajada');
+  const zona = document.getElementById('zona');
+  const titulo = document.getElementById('zona-titulo');
+  const ayuda = document.getElementById('zona-ayuda');
+  const form = document.getElementById('form');
+  const boton = document.getElementById('boton');
+
+  function mostrar() {
+    if (input.files.length) {
+      titulo.textContent = input.files[0].name;
+      ayuda.textContent = 'Archivo listo. Podés cambiarlo eligiendo otro.';
+      zona.classList.add('con-archivo');
+    }
+  }
+  input.addEventListener('change', mostrar);
+  ['dragenter', 'dragover'].forEach(e => zona.addEventListener(e, ev => {
+    ev.preventDefault(); zona.classList.add('arrastrando');
+  }));
+  ['dragleave', 'drop'].forEach(e => zona.addEventListener(e, ev => {
+    ev.preventDefault(); zona.classList.remove('arrastrando');
+  }));
+  zona.addEventListener('drop', ev => {
+    if (ev.dataTransfer.files.length) { input.files = ev.dataTransfer.files; mostrar(); }
+  });
+  form.addEventListener('submit', () => {
+    boton.disabled = true; boton.textContent = 'Generando…';
+  });
+  window.addEventListener('pageshow', () => { boton.disabled = false; boton.textContent = 'Generar final'; });
+</script>
+</body>
+</html>

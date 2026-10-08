@@ -1,0 +1,17 @@
+# Blueprint de Render: New + > Blueprint > elegir este repositorio.
+services:
+  - type: web
+    name: cuarteo-final
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --threads 2 --timeout 120
+    healthCheckPath: /salud
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      # Acceso con usuario y clave. Se cargan a mano en Render (no van en el repositorio).
+      - key: APP_USER
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
