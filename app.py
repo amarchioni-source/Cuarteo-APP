@@ -9,8 +9,8 @@ import secrets
 import time
 from pathlib import Path
 
-from flask import (Flask, Response, abort, render_template, request,
-                   send_file)
+from flask import (Flask, Response, abort, redirect, render_template, request,
+                   send_file, url_for)
 
 import generar_cuarteo as g
 
@@ -90,6 +90,12 @@ def salud():
 @app.get("/")
 def index():
     return render_index()
+
+
+@app.get("/generar")
+def generar_get():
+    """Quien abre /generar directamente (enlace copiado, recarga) vuelve al inicio."""
+    return redirect(url_for("index"))
 
 
 @app.post("/generar")
