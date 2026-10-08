@@ -25,10 +25,14 @@ Uso por línea de comandos
 import argparse
 import copy
 import datetime as dt
+import io
 import re
 import sys
+import zipfile
 
 import openpyxl
+import PIL  # noqa: F401  (sin Pillow, openpyxl descarta el logo de SENASA sin avisar)
+from openpyxl.cell.rich_text import CellRichText, TextBlock
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.workbook.properties import CalcProperties
 
@@ -273,6 +277,78 @@ def _hoja_peso(wb, detalle, row_total, ws_form):
     wp.sheet_view.showGridLines = False
 
 
+def _poner_fecha(cell, fecha):
+    """Cambia día, mes y año conservando los tramos de formato del texto."""
+    v = cell.value
+    nums = iter([str(fecha.day), str(fecha.month), str(fecha.year)])
+    if isinstance(v, CellRichText):
+        nuevo = []
+        for el in v:                      # lista nueva: asignar por índice fusiona tramos
+            if isinstance(el, TextBlock) and el.text.strip().isdigit():
+                n = next(nums, None)
+                el = TextBlock(el.font, n) if n is not None else el
+            nuevo.append(el)
+        cell.value = CellRichText(nuevo)
+    else:
+        d, m, y = nums
+        cell.value = f"Fecha: Día {d} Mes {m} Año {y}"
+
+
+def _poner_serie(cell, serie):
+    """Cambia el número final de «SERIE C N° nnnn» conservando el formato."""
+    v = cell.value
+    if isinstance(v, CellRichText):
+        nuevo = list(v)
+        el = nuevo[-1]
+        if isinstance(el, TextBlock):
+            nuevo[-1] = TextBlock(el.font, re.sub(r"\d+\s*$", str(serie), el.text))
+        else:
+            nuevo[-1] = re.sub(r"\d+\s*$", str(serie), el)
+        cell.value = CellRichText(nuevo)
+    else:
+        cell.value = re.sub(r"\d+\s*$", str(serie), str(v))
+
+
+def _texto(cell):
+    v = cell.value
+    return "".join(el.text if isinstance(el, TextBlock) else el for el in v) \
+        if isinstance(v, CellRichText) else str(v)
+
+
+def _filas_autoaltura(plantilla):
+    """Filas de la plantilla con altura guardada pero sin 'altura personalizada'
+    (Excel las ajusta al contenido). openpyxl les agrega customHeight al guardar."""
+    if hasattr(plantilla, "seek"):
+        plantilla.seek(0)
+    with zipfile.ZipFile(plantilla) as z:
+        x = z.read("xl/worksheets/sheet1.xml").decode("utf8")
+    filas = []
+    for m in re.finditer(r"<row ([^>]*)>", x):
+        a = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
+        if "ht" in a and a.get("customHeight") != "1" and int(a["r"]) < FIRST:
+            filas.append(int(a["r"]))
+    if hasattr(plantilla, "seek"):
+        plantilla.seek(0)
+    return filas
+
+
+def _quitar_custom_height(datos, filas):
+    if not filas:
+        return datos
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(datos)) as zin, \
+            zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            blob = zin.read(item.filename)
+            if item.filename == "xl/worksheets/sheet1.xml":
+                x = blob.decode("utf8")
+                for r in filas:
+                    x = re.sub(r'(<row r="%d"[^>]*?) customHeight="1"' % r, r"\1", x, count=1)
+                blob = x.encode("utf8")
+            zout.writestr(item, blob)
+    return out.getvalue()
+
+
 # ---------------------------------------------------------------- generación
 def generar(bajada, plantilla, salida, fecha_faena=None, serie=None):
     """
@@ -283,7 +359,8 @@ def generar(bajada, plantilla, salida, fecha_faena=None, serie=None):
     res = analizar(d)
     tropas, detalle, fecha = d["tropas"], d["detalle"], d["fecha"]
 
-    wb = openpyxl.load_workbook(plantilla)
+    filas_auto = _filas_autoaltura(plantilla)
+    wb = openpyxl.load_workbook(plantilla, rich_text=True)
     ws = wb.active
     t0 = _fila_total_plantilla(ws)                  # fila TOTAL en la plantilla
 
@@ -307,12 +384,12 @@ def generar(bajada, plantilla, salida, fecha_faena=None, serie=None):
         del ws.row_dimensions[k]
 
     ff = fecha_faena or dia_habil_anterior(fecha)
-    ws["O14"].value = f"Fecha: Día {fecha.day} Mes {fecha.month} Año {fecha.year}"
+    _poner_fecha(ws["O14"], fecha)
     if serie is not None:
-        ws["P6"].value = re.sub(r"\d+\s*$", str(serie), str(ws["P6"].value))
+        _poner_serie(ws["P6"], serie)
     else:
         res["avisos"].append("No se indicó el número de serie: quedó el de la plantilla. Revisarlo.")
-    m_serie = re.search(r"(\d+)\s*$", str(ws["P6"].value))
+    m_serie = re.search(r"(\d+)\s*$", _texto(ws["P6"]))
 
     # formulario: una fila por tropa
     r = FIRST
@@ -362,11 +439,20 @@ def generar(bajada, plantilla, salida, fecha_faena=None, serie=None):
         ws.cell(r, 12, d["tot_sis"].get(t["tropa"]))._style = copy.copy(s_sum[9][1])
         ws.row_dimensions[r].height = alt_det
         r += 2
-    ws.column_dimensions["J"].width = max(ws.column_dimensions["J"].width or 0, 9)
 
     _hoja_peso(wb, detalle, row_total, ws.title)
     wb.calculation = CalcProperties(fullCalcOnLoad=True)    # Excel recalcula al abrir
-    wb.save(salida)
+    ws.sheet_view.topLeftCell = "A1"                        # abre arriba, en el formulario
+    for sel in ws.sheet_view.selection:
+        sel.activeCell, sel.sqref = "A1", "A1"
+    buf = io.BytesIO()
+    wb.save(buf)
+    datos = _quitar_custom_height(buf.getvalue(), filas_auto)
+    if hasattr(salida, "write"):
+        salida.write(datos)
+    else:
+        with open(salida, "wb") as f:
+            f.write(datos)
 
     res.update(fecha=fecha, fecha_faena=ff,
                serie=m_serie.group(1) if m_serie else None)
