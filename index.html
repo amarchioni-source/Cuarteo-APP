@@ -92,6 +92,18 @@ h3 { margin: 36px 0 4px; font-size: 17px; font-weight: 600; }
 .campo input:focus-visible { outline: 3px solid var(--acero); outline-offset: 1px; border-color: var(--acero); }
 .campo small { display: block; margin-top: 4px; color: var(--tenue); font-size: 13px; }
 
+.exito {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  margin: 0 0 24px; padding: 18px 22px;
+  background: #e8f6ee; border: 1px solid #b7e0c6; border-left: 6px solid var(--ok); border-radius: 6px;
+}
+.exito .tilde {
+  flex: none; width: 46px; height: 46px; border-radius: 50%;
+  background: var(--ok); color: #fff; display: grid; place-items: center;
+}
+.exito .texto { flex: 1 1 220px; }
+.exito strong { display: block; font-size: 21px; color: #14532d; line-height: 1.25; }
+.exito .texto span { color: #3d5f4a; font-size: 14px; }
 button, .descarga {
   display: inline-block;
   padding: 12px 22px;
@@ -163,6 +175,19 @@ td.alerta { color: var(--aviso); font-weight: 600; }
     <p class="bajada">Subí la bajada del sistema y descargá el Anexo Cuarteo y Troceo listo para revisar y enviar.</p>
   </header>
 
+  {% if res %}
+  <div class="exito" id="exito" role="status">
+    <span class="tilde" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+    </span>
+    <div class="texto">
+      <strong>Final generado con éxito</strong>
+      <span>{{ nombre }} · {{ res.n_tropas }} tropas · {{ res.medias|num }} medias</span>
+    </div>
+    <a class="descarga" href="{{ url_for('descargar', token=token) }}">Descargar {{ nombre }}</a>
+  </div>
+  {% endif %}
+
   <form id="form" method="post" action="{{ url_for('generar') }}" enctype="multipart/form-data">
     <label class="zona" id="zona" for="bajada">
       <input type="file" id="bajada" name="bajada" accept=".xlsx" required>
@@ -184,7 +209,7 @@ td.alerta { color: var(--aviso); font-weight: 600; }
       </div>
     </div>
 
-    <button type="submit" id="boton">Generar final</button>
+    <button type="submit" id="boton">{{ 'Generar otro final' if res else 'Generar final' }}</button>
   </form>
 
   {% if error %}
@@ -195,7 +220,7 @@ td.alerta { color: var(--aviso); font-weight: 600; }
   <section class="resultado" aria-labelledby="t-res">
     <div class="listo">
       <div>
-        <h2 id="t-res">Final generado</h2>
+        <h2 id="t-res">Resumen del final</h2>
         <dl class="datos">
           <div><dt>Programa del</dt><dd>{{ res.fecha|fecha }}</dd></div>
           <div><dt>Faena del</dt><dd>{{ res.fecha_faena|fecha }}</dd></div>
@@ -204,7 +229,6 @@ td.alerta { color: var(--aviso); font-weight: 600; }
           <div><dt>Medias</dt><dd>{{ res.medias|num }}</dd></div>
         </dl>
       </div>
-      <a class="descarga" href="{{ url_for('descargar', token=token) }}">Descargar {{ nombre }}</a>
     </div>
 
     {% if res.avisos %}
@@ -270,6 +294,7 @@ td.alerta { color: var(--aviso); font-weight: 600; }
   const ayuda = document.getElementById('zona-ayuda');
   const form = document.getElementById('form');
   const boton = document.getElementById('boton');
+  const textoBoton = boton.textContent;
 
   function mostrar() {
     if (input.files.length) {
@@ -291,7 +316,7 @@ td.alerta { color: var(--aviso); font-weight: 600; }
   form.addEventListener('submit', () => {
     boton.disabled = true; boton.textContent = 'Generando…';
   });
-  window.addEventListener('pageshow', () => { boton.disabled = false; boton.textContent = 'Generar final'; });
+  window.addEventListener('pageshow', () => { boton.disabled = false; boton.textContent = textoBoton; });
 </script>
 </body>
 </html>
